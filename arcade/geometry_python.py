@@ -88,10 +88,14 @@ def _are_polygons_intersecting(poly_a: FastPointList,
             # print(perp)
             # print(repr(poly_a))
             # print(normal)
-            projected_a = [glm_dot(point, normal) for point in poly_a]
+            projected_a_1, projected_a_2 = (poly_a * normal).split_components()
+            projected_a = projected_a_1 + projected_a_2
+            # projected_a = [glm_dot(point, normal) for point in poly_a]
             min_a = glm_min(projected_a)
             max_a = glm_max(projected_a)
-            projected_b = [glm_dot(point, normal) for point in poly_b]
+            projected_b_1, projected_b_2 = (poly_b * normal).split_components()
+            projected_b = projected_b_1 + projected_b_2
+            # projected_b = [glm_dot(point, normal) for point in poly_b]
             min_b = glm_min(projected_b)
             max_b = glm_max(projected_b)
             if max_a <= min_b or max_b <= min_a:

@@ -1,5 +1,4 @@
 import math
-from math import sin, cos, radians
 from typing import (
     Any,
     Tuple,
@@ -29,6 +28,9 @@ from glm import (
     mat3x3 as glm_mat3x3,
     mat2x2 as glm_mat2x2,
     dot as glm_dot,
+    radians,
+    cos,
+    sin
 )
 import glm
 
@@ -292,7 +294,7 @@ class Sprite:
 
         translation_vec = glm_vec2(position_x, position_y)
         # Cache the results
-        self._point_list_cache = self._points * transformation_matrix + translation_vec
+        # self._point_list_cache = self._points * transformation_matrix + translation_vec
         self._point_list_cache = glm_array([point * transformation_matrix + translation_vec for point in self._points])
         # print(repr(self._points))
         # print(rad)
