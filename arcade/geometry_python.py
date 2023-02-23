@@ -69,16 +69,19 @@ def _are_polygons_intersecting(poly_a: FastPointList,
     # projected_b = np.empty(len(poly_b), dtype=np.float64)
     # normal = glm_vec2()
     # normal = np_flip(normal_buf)
+    poly_a_x, poly_a_y = poly_a.split_components()
+    poly_b_x, poly_b_y = poly_b.split_components()
     for polygon in (poly_a, poly_b):
 
-        for i1 in range(len(polygon)):
-            i2 = (i1 + 1) % len(polygon)
+        l = len(polygon)
+        for i1 in range(l):
+            i2 = (i1 + 1) % l 
             projection_1 = polygon[i1]
             projection_2 = polygon[i2]
 
-            normal = (projection_1 - projection_2) * perp
+            normal_x, normal_y = projection_1 - projection_2
             # normal = glm_mat2(temp_normal[1], 0, temp_normal[0], 0)
-            normal[0], normal[1] = normal[1], normal[0]
+            # normal[0], normal[1] = -normal[1], normal[0]
 
             # print(polygon)
             # print(i1)
@@ -88,16 +91,13 @@ def _are_polygons_intersecting(poly_a: FastPointList,
             # print(perp)
             # print(repr(poly_a))
             # print(normal)
-            projected_a_1, projected_a_2 = (poly_a * normal).split_components()
-            projected_a = projected_a_1 + projected_a_2
-            # projected_a = [glm_dot(point, normal) for point in poly_a]
-            min_a = glm_min(projected_a)
-            max_a = glm_max(projected_a)
-            projected_b_1, projected_b_2 = (poly_b * normal).split_components()
-            projected_b = projected_b_1 + projected_b_2
-            # projected_b = [glm_dot(point, normal) for point in poly_b]
-            min_b = glm_min(projected_b)
-            max_b = glm_max(projected_b)
+            
+            projected_a = poly_a_x * normal_y - poly_a_y * normal_x
+            min_a = min(projected_a)
+            max_a = max(projected_a)
+            projected_b = poly_b_x * normal_y - poly_b_y * normal_x
+            min_b = min(projected_b)
+            max_b = max(projected_b)
             if max_a <= min_b or max_b <= min_a:
                 return False
     return True
