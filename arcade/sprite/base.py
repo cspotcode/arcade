@@ -19,10 +19,18 @@ from arcade import (
 )
 from arcade.color import BLACK
 from arcade.geometry_python import _is_point_in_polygon
-from arcade.hit_box_utils import NumPyPointList, ndarray_to_point_list, point_list_to_ndarray
+from arcade.hit_box_utils import FastPointList, fast_points_to_points, points_to_fast_points
 from arcade.types import Color, RGBA, Point, PointList, PathOrTexture
-import numpy as np
-from numpy import array as np_array
+from glm import (
+    array as glm_array,
+    vec2 as glm_vec2,
+    min as glm_min,
+    max as glm_max,
+    mat3x3 as glm_mat3x3,
+    mat2x2 as glm_mat2x2,
+    dot as glm_dot,
+)
+import glm
 
 if TYPE_CHECKING:  # handle import cycle caused by type hinting
     from arcade.sprite_list import SpriteList
@@ -78,9 +86,9 @@ class Sprite:
         self.change_angle: float = 0.0
 
         # Hit box and collision property
-        self._points: Optional[NumPyPointList] = None
-        self._point_list_cache: Optional[NumPyPointList] = None
-        self._point_list_cache_2: Optional[NumPyPointList] = None
+        self._points: Optional[FastPointList] = None
+        self._point_list_cache: Optional[FastPointList] = None
+        # self._point_list_cache_2: Optional[FastPointList] = None
 
         # Color
         self._color: RGBA = 255, 255, 255, 255
@@ -205,7 +213,7 @@ class Sprite:
         Points will be scaled with get_adjusted_hit_box.
         """
         self._point_list_cache = None
-        self._points = point_list_to_ndarray(points)
+        self._points = points_to_fast_points(points)
 
     def get_hit_box(self) -> PointList:
         """
@@ -222,7 +230,7 @@ class Sprite:
         """
         # Use existing points if we have them
         if self._points is not None:
-            return ndarray_to_point_list(self._points)
+            return fast_points_to_points(self._points)
 
         # If we don't already have points, try to get them from the texture
         if self._texture:
@@ -230,7 +238,7 @@ class Sprite:
         else:
             raise ValueError("Sprite has no hit box points due to missing texture")
 
-        return ndarray_to_point_list(self._points)
+        return fast_points_to_points(self._points)
 
     @property
     def hit_box(self) -> PointList:
@@ -242,9 +250,9 @@ class Sprite:
 
     def get_adjusted_hit_box(self) -> PointList:
         raise Exception("disabled for now")
-        return ndarray_to_point_list(self._get_adjusted_hit_box())
+        return fast_points_to_points(self._get_adjusted_hit_box())
 
-    def _get_adjusted_hit_box(self) -> NumPyPointList:
+    def _get_adjusted_hit_box(self) -> FastPointList:
         """
         Get the points that make up the hit box for the rect that makes up the
         sprite, including rotation and scaling.
@@ -253,12 +261,12 @@ class Sprite:
         if self._point_list_cache is not None:
             return self._point_list_cache
 
-        points = self._points
-        target = self._point_list_cache_2
-        if target is None or len(target) != len(points):
-            self._point_list_cache_2 = target = np.empty((len(points), 2), dtype=np.float64)
+        # points = self._points
+        # target = self._point_list_cache_2
+        # if target is None or len(target) != len(points):
+            # self._point_list_cache_2 = target = glm_array(
 
-        # position_x, position_y = self._position
+        position_x, position_y = self._position
         rad = radians(self._angle)
         scale_x, scale_y = self._scale
         rad_cos = cos(rad)
@@ -270,18 +278,31 @@ class Sprite:
         #     [scale_y * rad_sin, scale_y * rad_cos, position_y],
         #     [0., 0., 1.]
         # ])
-        transformation_matrix = np.array([
-            [scale_x * rad_cos, -scale_x * rad_sin],
-            [scale_y * rad_sin, scale_y * rad_cos],
-        ], dtype=np.float64)
+        # transformation_matrix = glm_mat3x3([
+        #     [scale_x * rad_cos, -scale_x * rad_sin, position_x],
+        #     [scale_y * rad_sin, scale_y * rad_cos, position_y],
+        #     [0, 0, 1]
+        # ])
+        transformation_matrix = glm_mat2x2(
+            scale_x * rad_cos, -scale_x * rad_sin,
+            scale_y * rad_sin, scale_y * rad_cos
+        )
         # rotation_matrix = np.array([[rad_cos, -rad_sin], [rad_sin, rad_cos]])
         # transformation_matrix = np.dot(scaling_matrix, rotation_matrix)
 
-        translation_matrix = np.array(self._position, dtype=np.float64)
+        translation_vec = glm_vec2(position_x, position_y)
         # Cache the results
-        self._point_list_cache = target
-        np.dot(self._points, transformation_matrix, target)
-        np.add(translation_matrix, target, target)
+        self._point_list_cache = self._points * transformation_matrix + translation_vec
+        self._point_list_cache = glm_array([point * transformation_matrix + translation_vec for point in self._points])
+        # print(repr(self._points))
+        # print(rad)
+        # print(repr(transformation_matrix))
+        # print(repr(translation_vec))
+        # print(repr(self._points @ transformation_matrix))
+        # print(repr(self._points * transformation_matrix))
+        # print(repr(transformation_matrix @ glm.transpose(self._points)))
+        # print(repr(transformation_matrix * glm.transpose(self._points)))
+        # print(repr(self._point_list_cache))
         return self._point_list_cache
 
     def forward(self, speed: float = 1.0) -> None:
@@ -375,7 +396,7 @@ class Sprite:
         if len(points) == 0:
             return self.center_y
 
-        return np.amin(points, 1)
+        return glm_min(points).y
 
     @bottom.setter
     def bottom(self, amount: float):
@@ -398,7 +419,7 @@ class Sprite:
         if len(points) == 0:
             return self.center_y
 
-        return np.amax(points, 1)
+        return glm_max(points).y
 
     @top.setter
     def top(self, amount: float):
@@ -728,7 +749,7 @@ class Sprite:
         if len(points) == 0:
             return self.center_x
 
-        return np.amin(points, 0)
+        return glm_min(points).x
 
     @left.setter
     def left(self, amount: float):
@@ -749,7 +770,7 @@ class Sprite:
         if len(points) == 0:
             return self.center_x
 
-        return np.amax(points, 0)
+        return glm_max(points).x
 
     @right.setter
     def right(self, amount: float):

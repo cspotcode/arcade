@@ -2,15 +2,17 @@
 Functions for calculating geometry.
 """
 from typing import cast
-from arcade.hit_box_utils import NumPyPointList
+from arcade.hit_box_utils import FastPointList
 from arcade.types import PointList
-import numpy as np
-from numpy import (
-    dot as np_dot, array as nparray, min as np_min, max as np_max, subtract as np_subtract, swapaxes as np_swapaxes, multiply as np_multiply, flip as np_flip,
-    maximum as np_maximum,
-    minimum as np_minimum,
+from glm import (
+    min as glm_min,
+    max as glm_max,
+    array as glm_array,
+    vec2 as glm_vec2,
+    dot as glm_dot,
+    mat2 as glm_mat2
 )
-
+import glm
 
 _PRECISION = 2
 
@@ -60,12 +62,12 @@ def are_polygons_intersecting(poly_a: PointList,
 
     return True
 
-perp = nparray([1, -1])
-def _are_polygons_intersecting(poly_a: NumPyPointList,
-                              poly_b: NumPyPointList) -> bool:
-    projected_a = np.empty(len(poly_a), dtype=np.float64)
-    projected_b = np.empty(len(poly_b), dtype=np.float64)
-    normal = np.empty(2, dtype=np.float64)
+perp = glm_vec2(1, -1)
+def _are_polygons_intersecting(poly_a: FastPointList,
+                              poly_b: FastPointList) -> bool:
+    # projected_a = np.empty(len(poly_a), dtype=np.float64)
+    # projected_b = np.empty(len(poly_b), dtype=np.float64)
+    # normal = glm_vec2()
     # normal = np_flip(normal_buf)
     for polygon in (poly_a, poly_b):
 
@@ -74,17 +76,25 @@ def _are_polygons_intersecting(poly_a: NumPyPointList,
             projection_1 = polygon[i1]
             projection_2 = polygon[i2]
 
-            np_subtract(projection_1, projection_2, normal)
-            np_multiply(perp, normal, normal)
+            normal = (projection_1 - projection_2) * perp
+            # normal = glm_mat2(temp_normal[1], 0, temp_normal[0], 0)
             normal[0], normal[1] = normal[1], normal[0]
 
-            np_dot(poly_a, normal, projected_a)
-            # min_a = np_min(projected_a)
-            # max_a = np_max(projected_a)
-            np_dot(poly_b, normal, projected_b)
-            # min_b = np_min(projected_b)
-            # max_b = np_max(projected_b)
-            if cast(float, np_maximum.reduce(projected_a)) <= cast(float, np_minimum.reduce(projected_b)) or cast(float, np_maximum.reduce(projected_b)) <= cast(float, np_minimum.reduce(projected_a)):
+            # print(polygon)
+            # print(i1)
+            # print(projection_1)
+            # print(i2)
+            # print(projection_2)
+            # print(perp)
+            # print(repr(poly_a))
+            # print(normal)
+            projected_a = [glm_dot(point, normal) for point in poly_a]
+            min_a = glm_min(projected_a)
+            max_a = glm_max(projected_a)
+            projected_b = [glm_dot(point, normal) for point in poly_b]
+            min_b = glm_min(projected_b)
+            max_b = glm_max(projected_b)
+            if max_a <= min_b or max_b <= min_a:
                 return False
     return True
 
@@ -212,7 +222,7 @@ def is_point_in_polygon(x: float, y: float, polygon_point_list) -> bool:
 
 # Returns true if the point p lies
 # inside the polygon[] with n vertices
-def _is_point_in_polygon(x: float, y: float, polygon_point_list: NumPyPointList) -> bool:
+def _is_point_in_polygon(x: float, y: float, polygon_point_list: FastPointList) -> bool:
     p = x, y
     n = len(polygon_point_list)
 
