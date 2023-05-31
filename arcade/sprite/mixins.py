@@ -2,7 +2,6 @@ from typing import Optional, Union, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pymunk import Vec2d
-    from pyglet.math import Vec2
 
 class PyMunk:
     """Object used to hold pymunk info for a sprite."""
@@ -16,7 +15,7 @@ class PyMunk:
 
     def __init__(self) -> None:
         self.damping: Optional[float] = None
-        self.gravity: Optional[Union[Vec2d, Tuple[float, float], Vec2]] = None
+        self.gravity: Optional[Union[Vec2d, Tuple[float, float]]] = None
         self.max_velocity: Optional[float] = None
         self.max_horizontal_velocity: Optional[float] = None
         self.max_vertical_velocity: Optional[float] = None
