@@ -11,7 +11,7 @@ import pyglet
 
 import pyglet.gl as gl
 import pyglet.window.mouse
-from pyglet.canvas.base import ScreenMode
+from pyglet.canvas.base import ScreenMode, Screen
 from pyglet.window import MouseCursor
 
 import arcade
@@ -54,7 +54,7 @@ def get_screens() -> List[Screen]:
     :rtype: List
     """
     display = pyglet.canvas.get_display()
-    return display.get_screens()
+    return display.get_screens() # type: ignore
 
 
 class NoOpenGLException(Exception):

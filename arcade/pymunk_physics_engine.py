@@ -96,19 +96,19 @@ class PymunkPhysicsEngine:
         """
 
         if damping is not None:
-            sprite.pymunk.damping = damping  # pyright: ignore [reportGeneralTypeIssues=false]
+            sprite.pymunk.damping = damping
 
         if gravity is not None:
-            sprite.pymunk.gravity = gravity  # pyright: ignore [reportGeneralTypeIssues=false]
+            sprite.pymunk.gravity = gravity
 
         if max_velocity is not None:
-            sprite.pymunk.max_velocity = max_velocity  # pyright: ignore [reportGeneralTypeIssues=false]
+            sprite.pymunk.max_velocity = max_velocity
 
         if max_vertical_velocity is not None:
-            sprite.pymunk.max_vertical_velocity = max_vertical_velocity  # pyright: ignore
+            sprite.pymunk.max_vertical_velocity = max_vertical_velocity
 
         if max_horizontal_velocity is not None:
-            sprite.pymunk.max_horizontal_velocity = max_horizontal_velocity  # pyright: ignore
+            sprite.pymunk.max_horizontal_velocity = max_horizontal_velocity
 
         # See if the sprite already has been added
         if sprite in self.sprites:
